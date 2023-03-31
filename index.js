@@ -73,26 +73,6 @@ app.post("/bank_nifty_market_price", fetchUser, handleDataRoute(BankNiftyMarketP
 // Fin Nifty Market Price Route
 app.post("/fin_nifty_market_price", fetchUser, handleDataRoute(FinNiftyMarketPrice));
 
-// function to set automatically next expirty date
-let Tuedate = moment().utcOffset('+05:30');
-let Thrdate = moment().utcOffset('+05:30');
-
-// Find the next Tuesday date
-while (Tuedate.weekday() !== 2) {
-  Tuedate.add(1, 'day');
-}
-
-// Find the next Thursday date
-while (Thrdate.weekday() !== 4) {
-  Thrdate.add(1, 'day');
-}
-
-// Format the date in YYYY-MM-DD format
-const ThrformattedDate = Thrdate.format('YYYY-MM-DD');
-
-// Format the date in YYYY-MM-DD format
-const TueformattedDate = Tuedate.format('YYYY-MM-DD');
-
 const fetchMarketPrice = async (url) => {
   const response = await axios.get(url);
   const $ = cheerio.load(response.data);
@@ -134,6 +114,7 @@ const clearDatabase = async () => {
     setTimeout(async () => {
       await fetchData();
     }, 10000);
+    await setLivePrices();
   } catch (err) {
     console.error(err);
   }
@@ -243,26 +224,42 @@ const calculateData = (result, price, currentDate) => {
   return data;
 };
 
+
 // Function to fetch option chain data from the website
-const fetchOptionChainData = async (url, tableSelector, dataModel) => {
-  const result = await axios.get(url);
+const fetchOptionChainData = async (url, dataModel) => {
+  // Get expiry dates from the URL
+  const expiryDate = await axios.get(url);
+  const expiry = cheerio.load(expiryDate.data);
+  const expiryD = [];
+  const expiryDateString = expiry("#sel_exp_date");
+
+  // Extract expiry dates from the dropdown menu and add to array
+  expiryDateString.each((i, element) => {
+    const cells = expiry(element).find("option");
+    const expiry_date = cells.eq(0).attr("value").trim();
+    expiryD.push(expiry_date);
+  });
+
+  // Make request to URL with expiry date appended to get option chain data
+  const result = await axios.get(url + expiryD[0]);
   const $ = cheerio.load(result.data);
-  
-  const tableRows = $(tableSelector + " tbody tr");
+
+  // Extract data from the option chain table and add to array
+  const tableRows = $(".table_optionchain table tbody tr");
   const tableData = tableRows.map((i, element) => {
     const cells = $(element).find("td");
     return {
-      CallLTP: cells.eq(0).text().trim(),
-      CallChgLTP: cells.eq(1).text().trim(),
-      CallVol: cells.eq(2).text().trim(),
-      CallOI: cells.eq(3).text().trim(),
-      CallChgOI: cells.eq(4).text().trim(),
-      StrikePrice: cells.eq(5).text().trim(),
-      PutLTP: cells.eq(6).text().trim(),
-      PutChgLTP: cells.eq(7).text().trim(),
-      PutVol: cells.eq(8).text().trim(),
-      PutOI: cells.eq(9).text().trim(),
-      PutChgOI: cells.eq(10).text().trim(),
+      CallOI : cells.eq(0).text().trim(),
+      CallChgOI : cells.eq(1).text().trim(),
+      CallVol : cells.eq(2).text().trim(),
+      CallChgLTP : cells.eq(3).text().trim(),
+      CallLTP : cells.eq(4).text().trim(),
+      StrikePrice : cells.eq(5).text().trim(),
+      PutLTP : cells.eq(6).text().trim(),
+      PutChgLTP : cells.eq(7).text().trim(),
+      PutVol : cells.eq(8).text().trim(),
+      PutChgOI : cells.eq(9).text().trim(),
+      PutOI : cells.eq(10).text().trim()
     };
   }).get();
 
@@ -276,8 +273,7 @@ const fetchOptionChainData = async (url, tableSelector, dataModel) => {
 // Function to fetch nifty option chain data from the website
 const fetchNiftyOptionChainData = async () => {
   await fetchOptionChainData(
-    "https://www.moneycontrol.com/india/indexfutures/nifty/9",
-    "#optchain_div div div table",
+    "https://www.moneycontrol.com/indices/fno/view-option-chain/NIFTY/",
     NiftyOptionData
   );
 };
@@ -285,56 +281,17 @@ const fetchNiftyOptionChainData = async () => {
 // Function to fetch bank nifty option chain data from the website
 const fetchBankNiftyOptionChainData = async () => {
   await fetchOptionChainData(
-    "https://www.moneycontrol.com/india/indexfutures/banknifty/23/",
-    "#optchain_div div div table",
+    "https://www.moneycontrol.com/indices/fno/view-option-chain/BANKNIFTY/",
     BankNiftyOptionData
   );
 };
 
 // Function to fetch fin nifty option chain data from the website
 const fetchFinNiftyOptionChainData = async () => {
-  const result = await axios.get(
-    `https://www.moneycontrol.com/indices/fno/view-option-chain/FINNIFTY/${TueformattedDate}`
+  await fetchOptionChainData(
+    "https://www.moneycontrol.com/indices/fno/view-option-chain/FINNIFTY/",
+    FinNiftyOptionData
   );
-  const FNOC$ = cheerio.load(result.data);
-
-  const tableRows = FNOC$("#optionchn div table tbody tr");
-  let tableData = [];
-
-  // Scalping nifty Option Chain Data
-  tableRows.each((i, element) => {
-    const cells = FNOC$(element).find("td");
-    const CallOI = cells.eq(0).text().trim();
-    const CallChgOI = cells.eq(1).text().trim();
-    const CallVol = cells.eq(2).text().trim();
-    const CallChgLTP = cells.eq(3).text().trim();
-    const CallLTP = cells.eq(4).text().trim();
-    const StrikePrice = cells.eq(5).text().trim();
-    const PutLTP = cells.eq(6).text().trim();
-    const PutChgLTP = cells.eq(7).text().trim();
-    const PutVol = cells.eq(8).text().trim();
-    const PutChgOI = cells.eq(9).text().trim();
-    const PutOI = cells.eq(10).text().trim();
-    tableData.push({
-      CallOI,
-      CallChgOI,
-      CallVol,
-      CallChgLTP,
-      CallLTP,
-      StrikePrice,
-      PutLTP,
-      PutChgLTP,
-      PutVol,
-      PutOI,
-      PutChgOI,
-    });
-  });
-
-  // Bank nifty delete all data into collection
-  await FinNiftyOptionData.deleteMany({});
-
-  // Insert new data into the collection
-  await FinNiftyOptionData.insertMany(tableData);
 };
 
 // Function to fetch data during market hours
@@ -377,7 +334,6 @@ const updateLivePrice = async () => {
     await setLivePrices();
   }
 };
-
 // Schedule the functions to run every 5 minutes in Indian Standard Time
 const CallIntervalJob = cron.job('*/5 * * * *', async () => {
   await fetchMarketData();
