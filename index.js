@@ -341,13 +341,6 @@ const CallIntervalJob = cron.job('*/5 * * * *', async () => {
 });
 
 CallIntervalJob.start();
-setInterval( () => {
-   fetchNiftyOptionChainData();
-     fetchBankNiftyOptionChainData();
-     fetchFinNiftyOptionChainData();
-       fetchData();
-  setLivePrices();
-}, 30000);
  
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}}`);
