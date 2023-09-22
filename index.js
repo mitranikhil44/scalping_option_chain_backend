@@ -14,7 +14,6 @@ const express = require("express");
 const cheerio = require("cheerio");
 const axios = require("axios");
 const cors = require("cors");
-const cron = require('cron');
 
 // Connet to database
 connectToMongo();
@@ -334,13 +333,8 @@ const updateLivePrice = async () => {
     await setLivePrices();
   }
 };
-// Schedule the functions to run every 5 minutes in Indian Standard Time
-const CallIntervalJob = cron.job('*/5 * * * *', async () => {
   await fetchMarketData();
   await updateLivePrice();
-});
-
-CallIntervalJob.start();
  
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}}`);
