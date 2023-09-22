@@ -13,7 +13,7 @@
        "command": "node",
        "schedule": "*/5 * * * *",
        "maxExecutions": 1,
-       "buildCommand": "npm install && npm run build",
+       "path": "/cron",
        "output": {
          "format": "json"
        }
