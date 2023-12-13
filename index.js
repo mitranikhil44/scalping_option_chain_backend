@@ -344,19 +344,19 @@ const fetchFinNiftyOptionChainData = async () => {
 const fetchMarketData = async () => {
   const now = moment().tz("Asia/Kolkata");
   const isMarketOpen =
-    now.day() >= 1 &&
-    now.day() <= 5 &&
-    now.isBetween(
-      moment.tz("Asia/Kolkata").hour(9),
-      moment.tz("Asia/Kolkata").hour(15).minute(30),
-      "hour",
-      "[]"
-    );
-
-  if (isMarketOpen) {
-    await fetchNiftyOptionChainData();
-    await fetchBankNiftyOptionChainData();
-    await fetchFinNiftyOptionChainData();
+  now.day() >= 1 &&
+  now.day() <= 5 &&
+  now.isBetween(
+    moment.tz("Asia/Kolkata").hour(9).minute(0), // Market opens at 9:00 AM
+      moment.tz("Asia/Kolkata").hour(15).minute(30), // Market closes at 3:30 PM
+      "minute", // Check at minute level
+      "[)"
+      );
+      
+      if (isMarketOpen) {
+        await fetchNiftyOptionChainData();
+        await fetchBankNiftyOptionChainData();
+        await fetchFinNiftyOptionChainData();
     setTimeout(async () => {
       await fetchData();
     }, 10000);
@@ -370,15 +370,16 @@ const updateLivePrice = async () => {
     now.day() >= 1 &&
     now.day() <= 5 &&
     now.isBetween(
-      moment.tz("Asia/Kolkata").hour(9),
-      moment.tz("Asia/Kolkata").hour(15).minute(30),
-      "hour",
-      "[]"
+      moment.tz("Asia/Kolkata").hour(9).minute(0), // Market opens at 9:00 AM
+      moment.tz("Asia/Kolkata").hour(15).minute(30), // Market closes at 3:30 PM
+      "minute", // Check at minute level
+      "[)"
     );
   if (isMarketOpen) {
     await setLivePrices();
   }
 };
+
 
 const cronJob = cron.job("*/15 * * * *", async () => {
   try {
