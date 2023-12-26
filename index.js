@@ -379,9 +379,9 @@ const updateLivePrice = async () => {
     await setLivePrices();
   }
 };
+clearDatabase();
 
-
-const cronJob = cron.job("*/15 * * * *", async () => {
+const cronJob = cron.job("*/5 * * * *", async () => {
   try {
     await fetchMarketData();
     await updateLivePrice();
@@ -389,21 +389,20 @@ const cronJob = cron.job("*/15 * * * *", async () => {
     console.error("Error in cron job:", error);
   }
 });
-
 let currentMin = new Date().getMinutes();
-
-const intervalId = setInterval(() => {
+const intervalId = setInterval(async() => {
   const now = new Date();
   const newMin = now.getMinutes();
 
   // Check if the minute has changed and is even
-  if (newMin !== currentMin && newMin % 15 === 0) {
+  if (newMin !== currentMin && newMin % 5 === 0) {
+    await fetchMarketData();
+    await updateLivePrice();
     cronJob.start();
     dailyClearDatabaseJob.start();
     clearInterval(intervalId);
   }
 }, 1000);
-
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });
