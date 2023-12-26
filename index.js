@@ -379,7 +379,6 @@ const updateLivePrice = async () => {
     await setLivePrices();
   }
 };
-clearDatabase();
 
 const cronJob = cron.job("*/5 * * * *", async () => {
   try {
