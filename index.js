@@ -14,7 +14,6 @@ const express = require("express");
 const cheerio = require("cheerio");
 const axios = require("axios");
 const cors = require("cors");
-const cron = require("cron");
 
 // Connet to database
 connectToMongo();
@@ -135,10 +134,44 @@ const clearDatabase = async () => {
   }
 };
 
-// Schedule the function to run every day at 12:00am in Indian Standard Time
-const dailyClearDatabaseJob = cron.job("0 0 * * *", async () => {
+// Function to perform the action at 9:00 AM IST
+const performAction = async () => {
   await clearDatabase();
-});
+  setInterval(async() => {
+    await clearDatabase();    
+  }, 24 * 60 * 60 * 1000);
+  // Add your code here to log or perform any action
+};
+
+// Function to calculate the time difference until 9:00 AM IST
+const calculateTimeDifference = () => {
+  // Get the current date and time in the Indian time zone (IST)
+  const now = new Date();
+  const indianNow = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+  );
+
+  // Set the target time to 9:00 AM IST
+  const targetTime = new Date(indianNow);
+  targetTime.setHours(9, 0, 0, 0);
+
+  // Calculate the time difference in milliseconds
+  const timeDifference = targetTime - indianNow;
+
+  return timeDifference;
+};
+
+// Schedule the timeout
+const scheduleTimeout = () => {
+  // Calculate the time difference until 9:00 AM IST
+  const timeDifference = calculateTimeDifference();
+
+  // Set a timeout to perform the action after the calculated time difference
+  setTimeout(performAction, timeDifference);
+};
+
+// Start scheduling the timeout
+scheduleTimeout();
 
 // Function to set live market price
 const setLiveMarketPrice = async (marketPriceModel, getPriceFn) => {
@@ -347,7 +380,7 @@ const fetchMarketData = async () => {
   now.day() >= 1 &&
   now.day() <= 5 &&
   now.isBetween(
-    moment.tz("Asia/Kolkata").hour(9).minute(0), // Market opens at 9:00 AM
+    moment.tz("Asia/Kolkata").hour(9).minute(10), // Market opens at 9:00 AM
       moment.tz("Asia/Kolkata").hour(15).minute(30), // Market closes at 3:30 PM
       "minute", // Check at minute level
       "[)"
@@ -370,7 +403,7 @@ const updateLivePrice = async () => {
     now.day() >= 1 &&
     now.day() <= 5 &&
     now.isBetween(
-      moment.tz("Asia/Kolkata").hour(9).minute(0), // Market opens at 9:00 AM
+      moment.tz("Asia/Kolkata").hour(9).minute(10), // Market opens at 9:00 AM
       moment.tz("Asia/Kolkata").hour(15).minute(30), // Market closes at 3:30 PM
       "minute", // Check at minute level
       "[)"
@@ -380,14 +413,15 @@ const updateLivePrice = async () => {
   }
 };
 
-const cronJob = cron.job("*/5 * * * *", async () => {
+const cronJob = setInterval(async () => {  
   try {
     await fetchMarketData();
     await updateLivePrice();
   } catch (error) {
     console.error("Error in cron job:", error);
   }
-});
+}, 5000)
+
 let currentMin = new Date().getMinutes();
 const intervalId = setInterval(async() => {
   const now = new Date();
@@ -395,13 +429,11 @@ const intervalId = setInterval(async() => {
 
   // Check if the minute has changed and is even
   if (newMin !== currentMin && newMin % 5 === 0) {
-    await fetchMarketData();
-    await updateLivePrice();
     cronJob.start();
-    dailyClearDatabaseJob.start();
     clearInterval(intervalId);
   }
 }, 1000);
+
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });
