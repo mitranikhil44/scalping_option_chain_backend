@@ -5,17 +5,18 @@ mongoose.set('strictQuery', true);
 
 // Define the NiftyData schema
 const NiftyOptionSchema = new mongoose.Schema({
-    CallLTP : { type: String, required: true},
-    CallChgLTP : { type: String, required: true},
-    CallVol : { type: String, required: true},
-    CallOI : { type: String, required: true},
-    CallChgOI : { type: String, required: true},
-    StrikePrice : { type: String, required: true},
-    PutLTP : { type: String, required: true},
-    PutChgLTP : { type: String, required: true},
-    PutVol : { type: String, required: true},
-    PutOI : { type: String, required: true},
-    PutChgOI : { type: String, required: true}
+  id: Number,
+  CallOI: String,
+  CallChgOI: String,
+  CallVol: String,
+  CallChgLTP: String,
+  CallLTP: String,
+  StrikePrice: String,
+  PutLTP: String,
+  PutChgLTP: String,
+  PutVol: String,
+  PutChgOI: String,
+  PutOI: String,
   });
   
   // Compile the schema into a model

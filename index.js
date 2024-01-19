@@ -14,6 +14,7 @@ const express = require("express");
 const cheerio = require("cheerio");
 const axios = require("axios");
 const cors = require("cors");
+const cron = require("cron");
 
 // Connet to database
 connectToMongo();
@@ -127,51 +128,17 @@ const clearDatabase = async () => {
     await fetchFinNiftyOptionChainData();
     setTimeout(async () => {
       await fetchData();
-    }, 10000);
+    }, 1000);
     await setLivePrices();
   } catch (err) {
     console.error(err);
   }
 };
 
-// Function to perform the action at 9:00 AM IST
-const performAction = async () => {
+// Schedule the function to run every day at 12:00am in Indian Standard Time
+const dailyClearDatabaseJob = cron.job("0 0 9 * * *", async () => {
   await clearDatabase();
-  setInterval(async() => {
-    await clearDatabase();    
-  }, 24 * 60 * 60 * 1000);
-  // Add your code here to log or perform any action
-};
-
-// Function to calculate the time difference until 9:00 AM IST
-const calculateTimeDifference = () => {
-  // Get the current date and time in the Indian time zone (IST)
-  const now = new Date();
-  const indianNow = new Date(
-    now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
-  );
-
-  // Set the target time to 9:00 AM IST
-  const targetTime = new Date(indianNow);
-  targetTime.setHours(9, 0, 0, 0);
-
-  // Calculate the time difference in milliseconds
-  const timeDifference = targetTime - indianNow;
-
-  return timeDifference;
-};
-
-// Schedule the timeout
-const scheduleTimeout = () => {
-  // Calculate the time difference until 9:00 AM IST
-  const timeDifference = calculateTimeDifference();
-
-  // Set a timeout to perform the action after the calculated time difference
-  setTimeout(performAction, timeDifference);
-};
-
-// Start scheduling the timeout
-scheduleTimeout();
+});
 
 // Function to set live market price
 const setLiveMarketPrice = async (marketPriceModel, getPriceFn) => {
@@ -302,6 +269,8 @@ const calculateData = (result, price, currentDate) => {
   return data;
 };
 
+let index = 1; 
+
 // Function to fetch option chain data from the website
 const fetchOptionChainData = async (url, dataModel) => {
   // Get expiry dates from the URL
@@ -316,21 +285,21 @@ const fetchOptionChainData = async (url, dataModel) => {
     const expiry_date = cells.eq(0).attr("value").trim();
     expiryD.push(expiry_date);
   });
-
+  
   // Make request to URL with expiry date appended to get option chain data
   const result = await axios.get(url + expiryD[0]);
   const $ = cheerio.load(result.data);
-
   // Extract data from the option chain table and add to array
   const tableRows = $(".table_optionchain table tbody tr");
   const tableData = tableRows
-    .map((i, element) => {
-      const cells = $(element).find("td");
-      return {
-        CallOI: cells.eq(0).text().trim(),
-        CallChgOI: cells.eq(1).text().trim(),
-        CallVol: cells.eq(2).text().trim(),
-        CallChgLTP: cells.eq(3).text().trim(),
+  .map((i, element) => {
+    const cells = $(element).find("td");
+    return {
+      id: index,
+      CallOI: cells.eq(0).text().trim(),
+      CallChgOI: cells.eq(1).text().trim(),
+      CallVol: cells.eq(2).text().trim(),
+      CallChgLTP: cells.eq(3).text().trim(),
         CallLTP: cells.eq(4).text().trim(),
         StrikePrice: cells.eq(5).text().trim(),
         PutLTP: cells.eq(6).text().trim(),
@@ -342,10 +311,7 @@ const fetchOptionChainData = async (url, dataModel) => {
     })
     .get();
 
-  // Delete all data from collection
-  await dataModel.deleteMany({});
-
-  // Insert new data into the collection
+    // Insert new data into the collection
   await dataModel.insertMany(tableData);
 };
 
@@ -354,23 +320,24 @@ const fetchNiftyOptionChainData = async () => {
   await fetchOptionChainData(
     "https://www.moneycontrol.com/indices/fno/view-option-chain/NIFTY/",
     NiftyOptionData
-  );
-};
-
-// Function to fetch bank nifty option chain data from the website
-const fetchBankNiftyOptionChainData = async () => {
-  await fetchOptionChainData(
-    "https://www.moneycontrol.com/indices/fno/view-option-chain/BANKNIFTY/",
-    BankNiftyOptionData
-  );
-};
-
-// Function to fetch fin nifty option chain data from the website
-const fetchFinNiftyOptionChainData = async () => {
+    );
+  };
+  
+  // Function to fetch bank nifty option chain data from the website
+  const fetchBankNiftyOptionChainData = async () => {
+    await fetchOptionChainData(
+      "https://www.moneycontrol.com/indices/fno/view-option-chain/BANKNIFTY/",
+      BankNiftyOptionData
+      );
+    };
+    
+    // Function to fetch fin nifty option chain data from the website
+    const fetchFinNiftyOptionChainData = async () => {
   await fetchOptionChainData(
     "https://www.moneycontrol.com/indices/fno/view-option-chain/FINNIFTY/",
     FinNiftyOptionData
   );
+  index += 1;       
 };
 
 // Function to fetch data during market hours
@@ -381,18 +348,17 @@ const fetchMarketData = async () => {
   now.day() <= 5 &&
   now.isBetween(
     moment.tz("Asia/Kolkata").hour(9).minute(10), // Market opens at 9:00 AM
-      moment.tz("Asia/Kolkata").hour(15).minute(30), // Market closes at 3:30 PM
+      moment.tz("Asia/Kolkata").hour(24).minute(0), // Market closes at 3:30 PM
       "minute", // Check at minute level
       "[)"
       );
-      
       if (isMarketOpen) {
         await fetchNiftyOptionChainData();
         await fetchBankNiftyOptionChainData();
         await fetchFinNiftyOptionChainData();
     setTimeout(async () => {
       await fetchData();
-    }, 10000);
+    }, 1000);
   }
 };
 
@@ -404,7 +370,7 @@ const updateLivePrice = async () => {
     now.day() <= 5 &&
     now.isBetween(
       moment.tz("Asia/Kolkata").hour(9).minute(10), // Market opens at 9:00 AM
-      moment.tz("Asia/Kolkata").hour(15).minute(30), // Market closes at 3:30 PM
+      moment.tz("Asia/Kolkata").hour(24).minute(0), // Market closes at 3:30 PM
       "minute", // Check at minute level
       "[)"
     );
@@ -413,24 +379,27 @@ const updateLivePrice = async () => {
   }
 };
 
-const cronJob = setInterval(async () => {  
+
+const cronJob = setInterval(async () => {
   try {
     await fetchMarketData();
     await updateLivePrice();
   } catch (error) {
     console.error("Error in cron job:", error);
   }
-}, 5000)
+}, 300000);
 
+clearDatabase();
 let currentMin = new Date().getMinutes();
 const intervalId = setInterval(async() => {
   const now = new Date();
   const newMin = now.getMinutes();
 
   // Check if the minute has changed and is even
-  if (newMin !== currentMin && newMin % 5 === 0) {
-    cronJob.start();
-    clearInterval(intervalId);
+  if (newMin !== currentMin && newMin % 2 === 0) {
+    await cronJob.unref();
+    await dailyClearDatabaseJob.start();
+    await clearInterval(intervalId);
   }
 }, 1000);
 

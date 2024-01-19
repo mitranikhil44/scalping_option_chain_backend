@@ -5,6 +5,7 @@ mongoose.set("strictQuery", true);
 
 // Define the NiftyData schema
 const MidCpNiftyOptionSchema = new mongoose.Schema({
+  id: Number,
   CallOI: String,
   CallChgOI: String,
   CallVol: String,

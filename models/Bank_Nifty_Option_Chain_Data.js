@@ -5,6 +5,7 @@ mongoose.set('strictQuery', true);
 
 // Define the NiftyData schema
 const BankNiftyOptionSchema = new mongoose.Schema({
+  id: Number,
     CallLTP : String,
     CallChgLTP : String,
     CallVol : String,
