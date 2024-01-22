@@ -138,7 +138,26 @@ const clearDatabase = async () => {
 app.post('/clear-database', async (req, res) => {
   try {
     // Call the clearDatabase function when the endpoint is accessed
-    await clearDatabase();
+    try {
+      await NiftyData.deleteMany({});
+      await BankNiftyData.deleteMany({});
+      await FinNiftyData.deleteMany({});
+      await NiftyOptionData.deleteMany({});
+      await BankNiftyOptionData.deleteMany({});
+      await FinNiftyOptionData.deleteMany({});
+      await NiftyMarketPrice.deleteMany({});
+      await BankNiftyMarketPrice.deleteMany({});
+      await FinNiftyMarketPrice.deleteMany({});
+      await fetchNiftyOptionChainData();
+      await fetchBankNiftyOptionChainData();
+      await fetchFinNiftyOptionChainData();
+      setTimeout(async () => {
+        await fetchData();
+      }, 1000);
+      await setLivePrices();
+    } catch (err) {
+      console.error(err);
+    }
     res.send('Database cleared successfully!');
   } catch (err) {
     console.error(err);
