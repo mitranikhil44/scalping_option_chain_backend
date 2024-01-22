@@ -390,19 +390,19 @@ const cronJob = setInterval(async () => {
 }, 300000);
 
 clearDatabase();
-let currentMin = new Date().getMinutes();
-const intervalId = setInterval(async() => {
-  const now = new Date();
-  const newMin = now.getMinutes();
-
-  // Check if the minute has changed and is even
-  if (newMin !== currentMin && newMin % 2 === 0) {
-    await cronJob.unref();
-    await dailyClearDatabaseJob.start();
-    await clearInterval(intervalId);
-  }
-}, 1000);
 
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
+  let currentMin = new Date().getMinutes();
+  const intervalId = setInterval(async() => {
+    const now = new Date();
+    const newMin = now.getMinutes();
+  
+    // Check if the minute has changed and is even
+    if (newMin !== currentMin && newMin % 2 === 0) {
+      await cronJob.unref();
+      await dailyClearDatabaseJob.start();
+      await clearInterval(intervalId);
+    }
+  }, 1000);
 });
