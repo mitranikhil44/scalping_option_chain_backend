@@ -135,6 +135,17 @@ const clearDatabase = async () => {
   }
 };
 
+app.post('/clear-database', async (req, res) => {
+  try {
+    // Call the clearDatabase function when the endpoint is accessed
+    await clearDatabase();
+    res.send('Database cleared successfully!');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
 // Schedule the function to run every day at 12:00am in Indian Standard Time
 const dailyClearDatabaseJob = cron.job("0 0 9 * * *", async () => {
   await clearDatabase();
