@@ -156,11 +156,11 @@ const setLiveMarketPrice = async (marketPriceModel, getPriceFn) => {
   try {
     const livePrice = await getPriceFn();
     const marketData = await marketPriceModel
-      .find()
-      .sort({ _id: -1 })
-      .limit(1)
-      .exec();
-
+    .find()
+    .sort({ _id: -1 })
+    .limit(1)
+    .exec();
+    
     if (marketData.length === 0) {
       const newMarketData = {
         timestamp: new Date().toLocaleTimeString("en-US", {
@@ -215,102 +215,102 @@ const fetchData = async () => {
     minute: "2-digit",
     second: "2-digit",
   });
-
+  
   const niftyData = calculateData(niftyResult, niftyPrice, currentDate);
   const bankNiftyData = calculateData(
     bankNiftyResult,
     bankNiftyPrice,
     currentDate
-  );
-  const finNiftyData = calculateData(
-    finNiftyResult,
-    finNiftyPrice,
-    currentDate
-  );
-
-  // Insert data into NiftyData and BankNiftyData collections
-  await Promise.all([
-    NiftyData.insertMany(niftyData),
-    BankNiftyData.insertMany(bankNiftyData),
-    FinNiftyData.insertMany(finNiftyData),
-  ]);
-};
-
-const calculateData = (result, price, currentDate) => {
-  const data = {
-    date: currentDate,
-    TotalCallLTP: 0,
-    TotalCallChgLTP: 0,
-    TotalCallVol: 0,
-    TotalCallOI: 0,
-    TotalCallChgOI: 0,
-    TotalPutLTP: 0,
-    TotalPutChgLTP: 0,
-    TotalPutVol: 0,
-    TotalPutOI: 0,
-    TotalPutChgOI: 0,
-    liveMarketPrice: price,
-  };
-
-  result.forEach((item) => {
-    data.TotalCallLTP +=
-      item.CallLTP === "-" ? 0 : parseFloat(item.CallLTP.replace(/,/g, ""));
-    data.TotalCallChgLTP +=
-      item.CallChgLTP === "-"
+    );
+    const finNiftyData = calculateData(
+      finNiftyResult,
+      finNiftyPrice,
+      currentDate
+      );
+      
+      // Insert data into NiftyData and BankNiftyData collections
+      await Promise.all([
+        NiftyData.insertMany(niftyData),
+        BankNiftyData.insertMany(bankNiftyData),
+        FinNiftyData.insertMany(finNiftyData),
+      ]);
+    };
+    
+    const calculateData = (result, price, currentDate) => {
+      const data = {
+        date: currentDate,
+        TotalCallLTP: 0,
+        TotalCallChgLTP: 0,
+        TotalCallVol: 0,
+        TotalCallOI: 0,
+        TotalCallChgOI: 0,
+        TotalPutLTP: 0,
+        TotalPutChgLTP: 0,
+        TotalPutVol: 0,
+        TotalPutOI: 0,
+        TotalPutChgOI: 0,
+        liveMarketPrice: price,
+      };
+      
+      result.forEach((item) => {
+        data.TotalCallLTP +=
+        item.CallLTP === "-" ? 0 : parseFloat(item.CallLTP.replace(/,/g, ""));
+        data.TotalCallChgLTP +=
+        item.CallChgLTP === "-"
         ? 0
         : parseFloat(item.CallChgLTP.replace(/,/g, ""));
-    data.TotalCallVol +=
-      item.CallVol === "-" ? 0 : parseFloat(item.CallVol.replace(/,/g, ""));
-    data.TotalCallOI +=
-      item.CallOI === "-" ? 0 : parseFloat(item.CallOI.replace(/,/g, ""));
-    data.TotalCallChgOI +=
+        data.TotalCallVol +=
+        item.CallVol === "-" ? 0 : parseFloat(item.CallVol.replace(/,/g, ""));
+        data.TotalCallOI +=
+        item.CallOI === "-" ? 0 : parseFloat(item.CallOI.replace(/,/g, ""));
+        data.TotalCallChgOI +=
       item.CallChgOI === "-" ? 0 : parseFloat(item.CallChgOI.replace(/,/g, ""));
-    data.TotalPutLTP +=
+      data.TotalPutLTP +=
       item.PutLTP === "-" ? 0 : parseFloat(item.PutLTP.replace(/,/g, ""));
-    data.TotalPutChgLTP +=
+      data.TotalPutChgLTP +=
       item.PutChgLTP === "-" ? 0 : parseFloat(item.PutChgLTP.replace(/,/g, ""));
-    data.TotalPutVol +=
+      data.TotalPutVol +=
       item.PutVol === "-" ? 0 : parseFloat(item.PutVol.replace(/,/g, ""));
-    data.TotalPutOI +=
+      data.TotalPutOI +=
       item.PutOI === "-" ? 0 : parseFloat(item.PutOI.replace(/,/g, ""));
-    data.TotalPutChgOI +=
+      data.TotalPutChgOI +=
       item.PutChgOI === "-" ? 0 : parseFloat(item.PutChgOI.replace(/,/g, ""));
-  });
-
-  return data;
-};
-
-let index = 1; 
-
-// Function to fetch option chain data from the website
-const fetchOptionChainData = async (url, dataModel) => {
-  // Get expiry dates from the URL
-  const expiryDate = await axios.get(url);
-  const expiry = cheerio.load(expiryDate.data);
-  const expiryD = [];
-  const expiryDateString = expiry("#sel_exp_date");
-
-  // Extract expiry dates from the dropdown menu and add to array
-  expiryDateString.each((i, element) => {
-    const cells = expiry(element).find("option");
-    const expiry_date = cells.eq(0).attr("value").trim();
-    expiryD.push(expiry_date);
-  });
+    });
+    
+    return data;
+  };
   
-  // Make request to URL with expiry date appended to get option chain data
-  const result = await axios.get(url + expiryD[0]);
-  const $ = cheerio.load(result.data);
-  // Extract data from the option chain table and add to array
-  const tableRows = $(".table_optionchain table tbody tr");
-  const tableData = tableRows
-  .map((i, element) => {
-    const cells = $(element).find("td");
-    return {
-      id: index,
-      CallOI: cells.eq(0).text().trim(),
-      CallChgOI: cells.eq(1).text().trim(),
-      CallVol: cells.eq(2).text().trim(),
-      CallChgLTP: cells.eq(3).text().trim(),
+  let index = 1; 
+  
+  // Function to fetch option chain data from the website
+  const fetchOptionChainData = async (url, dataModel) => {
+    // Get expiry dates from the URL
+    const expiryDate = await axios.get(url);
+    const expiry = cheerio.load(expiryDate.data);
+    const expiryD = [];
+    const expiryDateString = expiry("#sel_exp_date");
+    
+    // Extract expiry dates from the dropdown menu and add to array
+    expiryDateString.each((i, element) => {
+      const cells = expiry(element).find("option");
+      const expiry_date = cells.eq(0).attr("value").trim();
+      expiryD.push(expiry_date);
+    });
+    
+    // Make request to URL with expiry date appended to get option chain data
+    const result = await axios.get(url + expiryD[0]);
+    const $ = cheerio.load(result.data);
+    // Extract data from the option chain table and add to array
+    const tableRows = $(".table_optionchain table tbody tr");
+    const tableData = tableRows
+    .map((i, element) => {
+      const cells = $(element).find("td");
+      return {
+        id: index,
+        CallOI: cells.eq(0).text().trim(),
+        CallChgOI: cells.eq(1).text().trim(),
+        CallVol: cells.eq(2).text().trim(),
+        CallChgLTP: cells.eq(3).text().trim(),
         CallLTP: cells.eq(4).text().trim(),
         StrikePrice: cells.eq(5).text().trim(),
         PutLTP: cells.eq(6).text().trim(),
@@ -321,44 +321,44 @@ const fetchOptionChainData = async (url, dataModel) => {
       };
     })
     .get();
-
+    
     // Insert new data into the collection
-  await dataModel.insertMany(tableData);
-};
-
-// Function to fetch nifty option chain data from the website
-const fetchNiftyOptionChainData = async () => {
-  await fetchOptionChainData(
-    "https://www.moneycontrol.com/indices/fno/view-option-chain/NIFTY/",
-    NiftyOptionData
-    );
+    await dataModel.insertMany(tableData);
   };
   
-  // Function to fetch bank nifty option chain data from the website
-  const fetchBankNiftyOptionChainData = async () => {
+  // Function to fetch nifty option chain data from the website
+  const fetchNiftyOptionChainData = async () => {
     await fetchOptionChainData(
-      "https://www.moneycontrol.com/indices/fno/view-option-chain/BANKNIFTY/",
-      BankNiftyOptionData
+      "https://www.moneycontrol.com/indices/fno/view-option-chain/NIFTY/",
+      NiftyOptionData
       );
     };
     
-    // Function to fetch fin nifty option chain data from the website
-    const fetchFinNiftyOptionChainData = async () => {
-  await fetchOptionChainData(
-    "https://www.moneycontrol.com/indices/fno/view-option-chain/FINNIFTY/",
-    FinNiftyOptionData
-  );
-  index += 1;       
-};
-
-// Function to fetch data during market hours
-const fetchMarketData = async () => {
-  const now = moment().tz("Asia/Kolkata");
-  const isMarketOpen =
-  now.day() >= 1 &&
-  now.day() <= 5 &&
-  now.isBetween(
-    moment.tz("Asia/Kolkata").hour(9).minute(10), // Market opens at 9:00 AM
+    // Function to fetch bank nifty option chain data from the website
+    const fetchBankNiftyOptionChainData = async () => {
+      await fetchOptionChainData(
+        "https://www.moneycontrol.com/indices/fno/view-option-chain/BANKNIFTY/",
+        BankNiftyOptionData
+        );
+      };
+      
+      // Function to fetch fin nifty option chain data from the website
+      const fetchFinNiftyOptionChainData = async () => {
+        await fetchOptionChainData(
+          "https://www.moneycontrol.com/indices/fno/view-option-chain/FINNIFTY/",
+          FinNiftyOptionData
+          );
+          index += 1;       
+        };
+        
+        // Function to fetch data during market hours
+        const fetchMarketData = async () => {
+          const now = moment().tz("Asia/Kolkata");
+          const isMarketOpen =
+          now.day() >= 1 &&
+          now.day() <= 5 &&
+          now.isBetween(
+            moment.tz("Asia/Kolkata").hour(9).minute(10), // Market opens at 9:00 AM
       moment.tz("Asia/Kolkata").hour(3).minute(30), // Market closes at 3:30 PM
       "minute", // Check at minute level
       "[)"
@@ -367,53 +367,64 @@ const fetchMarketData = async () => {
         await fetchNiftyOptionChainData();
         await fetchBankNiftyOptionChainData();
         await fetchFinNiftyOptionChainData();
-    setTimeout(async () => {
-      await fetchData();
-    }, 1000);
-  }
-};
+        setTimeout(async () => {
+          await fetchData();
+        }, 1000);
+      }
+    };
+    
+    // Function to fetch live Volume
+    const updateLivePrice = async () => {
+      const now = moment().tz("Asia/Kolkata");
+      const isMarketOpen =
+      now.day() >= 1 &&
+      now.day() <= 5 &&
+      now.isBetween(
+        moment.tz("Asia/Kolkata").hour(9).minute(10), // Market opens at 9:10 AM
+        moment.tz("Asia/Kolkata").hour(3).minute(30), // Market closes at 3:30 PM
+        "minute", // Check at minute level
+        "[)"
+        );
+        if (isMarketOpen) {
+          await setLivePrices();
+        }
+      };
+      
+      
+      const cronJob = setInterval(async () => {
+        try {
+          await fetchMarketData();
+          await updateLivePrice();
+        } catch (error) {
+          console.error("Error in cron job:", error);
+        }
+      }, 300000); 
 
-// Function to fetch live Volume
-const updateLivePrice = async () => {
-  const now = moment().tz("Asia/Kolkata");
-  const isMarketOpen =
-    now.day() >= 1 &&
-    now.day() <= 5 &&
-    now.isBetween(
-      moment.tz("Asia/Kolkata").hour(9).minute(10), // Market opens at 9:10 AM
-      moment.tz("Asia/Kolkata").hour(3).minute(30), // Market closes at 3:30 PM
-      "minute", // Check at minute level
-      "[)"
-    );
-  if (isMarketOpen) {
-    await setLivePrices();
-  }
-};
+      let currentMin = new Date().getMinutes();
+      const intervalId = setInterval(async() => {
+        const now = new Date();
+        const newMin = now.getMinutes();
+      
+        // Check if the minute has changed and is even
+        if (newMin !== currentMin && newMin % 2 === 0) {
+          await cronJob.unref();
+          await dailyClearDatabaseJob.start();
+          await clearInterval(intervalId);
+        }
+      }, 1000);
 
-
-const cronJob = setInterval(async () => {
-  try {
-    await fetchMarketData();
-    await updateLivePrice();
-  } catch (error) {
-    console.error("Error in cron job:", error);
-  }
-}, 300000);
-
-clearDatabase();
-
-app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
-  let currentMin = new Date().getMinutes();
-  const intervalId = setInterval(async() => {
-    const now = new Date();
-    const newMin = now.getMinutes();
-  
-    // Check if the minute has changed and is even
-    if (newMin !== currentMin && newMin % 2 === 0) {
-      await cronJob.unref();
-      await dailyClearDatabaseJob.start();
-      await clearInterval(intervalId);
-    }
-  }, 1000);
-});
+      app.post('/call-market-data', async (req, res) => {
+        try {
+          // Call the market Data function when the endpoint is accessed
+          await currentMin();
+          res.send('Market data loading successfully!');
+        } catch (err) {
+          console.error(err);
+          res.status(500).send('Internal Server Error');
+        }
+      });
+      
+      app.listen(PORT, () => {
+        console.log(`Server started on port ${PORT}`);
+      });
+      
