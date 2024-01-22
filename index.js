@@ -348,7 +348,7 @@ const fetchMarketData = async () => {
   now.day() <= 5 &&
   now.isBetween(
     moment.tz("Asia/Kolkata").hour(9).minute(10), // Market opens at 9:00 AM
-      moment.tz("Asia/Kolkata").hour(24).minute(0), // Market closes at 3:30 PM
+      moment.tz("Asia/Kolkata").hour(3).minute(30), // Market closes at 3:30 PM
       "minute", // Check at minute level
       "[)"
       );
@@ -369,8 +369,8 @@ const updateLivePrice = async () => {
     now.day() >= 1 &&
     now.day() <= 5 &&
     now.isBetween(
-      moment.tz("Asia/Kolkata").hour(9).minute(10), // Market opens at 9:00 AM
-      moment.tz("Asia/Kolkata").hour(24).minute(0), // Market closes at 3:30 PM
+      moment.tz("Asia/Kolkata").hour(9).minute(10), // Market opens at 9:10 AM
+      moment.tz("Asia/Kolkata").hour(3).minute(30), // Market closes at 3:30 PM
       "minute", // Check at minute level
       "[)"
     );
