@@ -136,7 +136,6 @@ const clearDatabase = async () => {
 };
 
 app.post('/clear-database', async (req, res) => {
-  res.header('x-cyclic', 'cron');
   try {
     // Call the clearDatabase function when the endpoint is accessed
     await clearDatabase();
@@ -400,7 +399,6 @@ const marketLivePrice = setInterval(async() => {
 }, 1000);
 
 app.post('/start-analysis-data', async (req, res) => {
-  res.header('x-cyclic', 'cron');
   try {
     await marketLivePrice.unref();
     await analysisData.unref();
@@ -412,7 +410,6 @@ app.post('/start-analysis-data', async (req, res) => {
 });
 
 app.post('/stop-analysis-data', async (req, res) => {
-  res.header('x-cyclic', 'cron');
   try {
     await clearInterval(marketLivePrice);
     await clearInterval(analysisData);
