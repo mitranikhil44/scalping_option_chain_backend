@@ -358,8 +358,8 @@ const isMarketOpen = () => {
     now.day() <= 5 &&
     now.isBetween(
       moment.tz("Asia/Kolkata").hour(9).minute(10), // Market opens at 9:10 AM
-      moment.tz("Asia/Kolkata").hour(15).minute(30), // Market closes at 3:30 PM
-      "minute", // Check at minute level
+      moment.tz("Asia/Kolkata").hour(23).minute(30), // Market closes at 3:30 PM
+      "minute",
       "[)"
     )
   );
