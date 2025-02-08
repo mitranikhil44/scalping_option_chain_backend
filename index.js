@@ -147,9 +147,9 @@ app.post('/clear-database', async (req, res) => {
 });
 
 // Schedule the function to run every day at 12:00am in Indian Standard Time
-const dailyClearDatabaseJob = cron.job("0 0 9 * * *", async () => {
-  await clearDatabase();
-});
+// const dailyClearDatabaseJob = cron.job("0 0 9 * * *", async () => {
+//   await clearDatabase();
+// });
 
 // Function to set live market price
 const setLiveMarketPrice = async (marketPriceModel, getPriceFn) => {
