@@ -386,17 +386,17 @@ const updateLivePrice = async () => {
   }
 };
 
-const analysisData = setInterval(async () => {
-  try {
-    await fetchMarketData();
-  } catch (error) {
-    console.error("Error in cron job:", error);
-  }
-}, 300000);
+// const analysisData = setInterval(async () => {
+//   try {
+//     await fetchMarketData();
+//   } catch (error) {
+//     console.error("Error in cron job:", error);
+//   }
+// }, 300000);
 
-const marketLivePrice = setInterval(async() => {
-  await updateLivePrice();
-}, 1000);
+// const marketLivePrice = setInterval(async() => {
+//   await updateLivePrice();
+// }, 1000);
 
 app.post('/start-analysis-data', async (req, res) => {
   try {
