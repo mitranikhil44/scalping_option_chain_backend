@@ -14,7 +14,7 @@ const express = require("express");
 const cheerio = require("cheerio");
 const axios = require("axios");
 const cors = require("cors");
-const cron = require("cron");
+// const cron = require("cron");
 
 // Connet to database
 connectToMongo();
